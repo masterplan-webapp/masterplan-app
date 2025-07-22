@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import { supabase, Database } from './services';
+import { supabase } from './services';
 import { TRANSLATIONS } from './constants';
-import { LanguageCode, Translations, LanguageContextType, Theme, ThemeContextType, AuthContextType, User } from './types';
+import { Database, LanguageCode, Translations, LanguageContextType, Theme, ThemeContextType, AuthContextType, User } from './types';
 import { AuthChangeEvent, Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 // --- Language Context ---
@@ -55,17 +54,34 @@ export const useLanguage = (): LanguageContextType => {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
-    const theme: Theme = 'dark'; // Always dark
+    const [theme, setTheme] = useState<Theme>('dark'); // Default to dark, will be updated client-side
 
     useEffect(() => {
-        const root = document.documentElement;
-        root.classList.add('dark');
-        // Clean up legacy setting
-        localStorage.setItem('theme', 'dark');
-    }, []);
+        const applySystemTheme = () => {
+            const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const newTheme = isDarkMode ? 'dark' : 'light';
+            
+            setTheme(newTheme);
 
+            const root = document.documentElement;
+            // Ensure classes are clean before adding the new one
+            root.classList.remove('light', 'dark');
+            root.classList.add(newTheme);
+        };
+
+        applySystemTheme(); // Set theme on initial load
+
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        mediaQuery.addEventListener('change', applySystemTheme); // Listen for changes
+
+        return () => {
+            mediaQuery.removeEventListener('change', applySystemTheme);
+        };
+    }, []);
+    
+    // The toggle is not needed to fulfill the request, but let's keep it a no-op as it was.
     const toggleTheme = useCallback(() => {
-        // No-op, functionality removed for now
+        // No-op. Theme is driven by system preference.
     }, []);
 
     return (
@@ -100,14 +116,14 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
                     .single();
                 
                 if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-                     console.error('Error fetching profile:', error);
+                     console.warn('Could not fetch user profile. This is normal for new users or if RLS is enabled. Falling back to auth data.', error.message);
                 }
 
                 setUser({
                     id: supabaseUser.id,
                     email: supabaseUser.email || null,
-                    displayName: profile?.display_name || supabaseUser.email,
-                    photoURL: profile?.photo_url || supabaseUser.user_metadata.avatar_url,
+                    displayName: profile?.display_name || supabaseUser.user_metadata?.full_name || supabaseUser.email,
+                    photoURL: profile?.photo_url || supabaseUser.user_metadata?.avatar_url,
                 });
             } else {
                 setUser(null);
@@ -168,29 +184,30 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
     const updateUser = async (newDetails: Partial<User>) => {
         if (!user) return;
 
-        const updatePayload: Database['public']['Tables']['profiles']['Update'] = {};
+        const upsertPayload: { id: string, display_name?: string | null, photo_url?: string | null } = {
+            id: user.id,
+        };
 
         if (typeof newDetails.displayName !== 'undefined') {
-            updatePayload.display_name = newDetails.displayName;
+            upsertPayload.display_name = newDetails.displayName;
         }
 
         if (typeof newDetails.photoURL !== 'undefined') {
-            updatePayload.photo_url = newDetails.photoURL;
+            upsertPayload.photo_url = newDetails.photoURL;
         }
 
-        if (Object.keys(updatePayload).length === 0) {
-            return;
+        if (Object.keys(upsertPayload).length <= 1) {
+            return; // Nothing to update
         }
 
         const { data, error } = await supabase
             .from('profiles')
-            .update(updatePayload)
-            .eq('id', user.id)
+            .upsert(upsertPayload as any)
             .select()
             .single();
 
         if (error) {
-            console.error('Error updating profile:', error);
+            console.error('Error updating profile:', JSON.stringify(error, null, 2));
             throw error;
         }
 
