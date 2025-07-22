@@ -1,111 +1,11 @@
 
+
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { createClient } from '@supabase/supabase-js';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { PlanData, Campaign, User, LanguageCode, KeywordSuggestion, CreativeTextData, AdGroup, UTMLink, GeneratedImage, AspectRatio, SummaryData, MonthlySummary } from './types';
+import { Database, PlanData, Campaign, User, LanguageCode, KeywordSuggestion, CreativeTextData, AdGroup, UTMLink, GeneratedImage, AspectRatio, SummaryData, MonthlySummary } from './types';
 import { MONTHS_LIST, OPTIONS, CHANNEL_FORMATS, DEFAULT_METRICS_BY_OBJECTIVE } from "./constants";
-
-
-// --- Database Schema Definition ---
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
-
-export interface Database {
-  public: {
-    Tables: {
-      plans: {
-        Row: {
-            id: string;
-            created_at?: string;
-            user_id?: string;
-            campaignName: string;
-            objective: string;
-            targetAudience: string;
-            location: string;
-            totalInvestment: number;
-            logoUrl: string;
-            customFormats: Json;
-            utmLinks: Json;
-            months: Json;
-            creatives: Json;
-            adGroups: Json;
-            aiPrompt?: string | null;
-            aiImagePrompt?: string | null;
-        },
-        Insert: {
-            id: string;
-            created_at?: string;
-            user_id?: string;
-            campaignName: string;
-            objective: string;
-            targetAudience: string;
-            location: string;
-            totalInvestment: number;
-            logoUrl: string;
-            customFormats: Json;
-            utmLinks: Json;
-            months: Json;
-            creatives: Json;
-            adGroups: Json;
-            aiPrompt?: string | null;
-            aiImagePrompt?: string | null;
-        },
-        Update: {
-            id?: string;
-            created_at?: string;
-            user_id?: string;
-            campaignName?: string;
-            objective?: string;
-            targetAudience?: string;
-            location?: string;
-            totalInvestment?: number;
-            logoUrl?: string;
-            customFormats?: Json;
-            utmLinks?: Json;
-            months?: Json;
-            creatives?: Json;
-            adGroups?: Json;
-            aiPrompt?: string | null;
-            aiImagePrompt?: string | null;
-        }
-      },
-      profiles: {
-         Row: {
-            id: string,
-            display_name: string | null,
-            photo_url: string | null
-        },
-        Insert: {
-            id: string,
-            display_name?: string | null,
-            photo_url?: string | null
-        },
-        Update: {
-            display_name?: string | null,
-            photo_url?: string | null
-        }
-      }
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      [_ in never]: never
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
 
 
 // --- Supabase Client ---
@@ -124,7 +24,17 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 
 // --- Gemini API Helper ---
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Lazy-initialize the AI client to prevent a crash on load if API_KEY is missing.
+let ai: GoogleGenAI | null = null;
+const getAiClient = (): GoogleGenAI => {
+    if (!ai) {
+        // This will only be called when an AI function is used for the first time.
+        // It assumes process.env.API_KEY is available at that point.
+        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    }
+    return ai;
+};
+
 
 // --- UTILITY FUNCTIONS ---
 export const formatCurrency = (value?: number | string): string => {
@@ -166,6 +76,28 @@ const downloadFile = (filename: string, content: string, mimeType: string) => {
     URL.revokeObjectURL(link.href);
 };
 
+// Helper to convert from DB Row to application PlanData
+const planFromDb = (dbPlan: Database['public']['Tables']['plans']['Row']): PlanData => {
+  return {
+    id: dbPlan.id,
+    created_at: dbPlan.created_at,
+    user_id: dbPlan.user_id,
+    campaignName: dbPlan.campaignName,
+    objective: dbPlan.objective,
+    targetAudience: dbPlan.targetAudience,
+    location: dbPlan.location,
+    totalInvestment: dbPlan.totalInvestment,
+    logoUrl: dbPlan.logoUrl,
+    aiPrompt: dbPlan.aiPrompt,
+    aiImagePrompt: dbPlan.aiImagePrompt,
+    customFormats: (dbPlan.customFormats as unknown as string[]) ?? [],
+    utmLinks: (dbPlan.utmLinks as unknown as UTMLink[]) ?? [],
+    months: (dbPlan.months as unknown as Record<string, Campaign[]>) ?? {},
+    creatives: (dbPlan.creatives as unknown as Record<string, CreativeTextData[]>) ?? {},
+    adGroups: (dbPlan.adGroups as unknown as AdGroup[]) ?? [],
+  };
+};
+
 // --- Supabase Data Services ---
 export const getPlans = async (userId: string): Promise<PlanData[]> => {
     const { data, error } = await supabase
@@ -178,13 +110,13 @@ export const getPlans = async (userId: string): Promise<PlanData[]> => {
         console.error("Error fetching plans:", error);
         return [];
     }
-    return (data as unknown as PlanData[]) || [];
+    return data ? data.map(planFromDb) : [];
 };
 
 export const savePlan = async (plan: PlanData): Promise<PlanData | null> => {
     const { data, error } = await supabase
         .from('plans')
-        .upsert(plan)
+        .upsert(plan as any)
         .select()
         .single();
     
@@ -192,7 +124,7 @@ export const savePlan = async (plan: PlanData): Promise<PlanData | null> => {
         console.error("Error saving plan:", error);
         return null;
     }
-    return data as unknown as PlanData | null;
+    return data ? planFromDb(data) : null;
 };
 
 export const deletePlan = async (planId: string): Promise<void> => {
@@ -219,7 +151,7 @@ export const getPlanById = async (planId: string): Promise<PlanData | null> => {
         }
         return null;
     }
-    return data as unknown as PlanData | null;
+    return data ? planFromDb(data) : null;
 };
 
 
@@ -422,7 +354,8 @@ export const createNewPlanFromTemplate = async (userId: string): Promise<PlanDat
 
 export const callGeminiAPI = async (prompt: string, isJson: boolean = false): Promise<any> => {
     try {
-        const response = await ai.models.generateContent({
+        const aiClient = getAiClient();
+        const response = await aiClient.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: [{ parts: [{ text: prompt }] }],
             ...(isJson && { config: { responseMimeType: "application/json" } })
@@ -500,7 +433,8 @@ export const generateAIPlan = async (userPrompt: string, language: LanguageCode)
     };
 
     try {
-        const response = await ai.models.generateContent({
+        const aiClient = getAiClient();
+        const response = await aiClient.models.generateContent({
             model: "gemini-2.5-flash",
             contents: [{ parts: [{ text: `Business Description: "${userPrompt}"` }] }],
             config: {
@@ -527,7 +461,8 @@ export const generateAIKeywords = async (plan: PlanData, mode: 'seed' | 'prompt'
     const schema = { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { keyword: { type: Type.STRING }, volume: { type: Type.INTEGER }, clickPotential: { type: Type.INTEGER }, minCpc: { type: Type.NUMBER }, maxCpc: { type: Type.NUMBER } }, required: ["keyword", "volume", "clickPotential", "minCpc", "maxCpc"] } };
 
     try {
-        const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: [{ parts: [{ text: prompt }] }], config: { systemInstruction, responseMimeType: "application/json", responseSchema: schema } });
+        const aiClient = getAiClient();
+        const response = await aiClient.models.generateContent({ model: "gemini-2.5-flash", contents: [{ parts: [{ text: prompt }] }], config: { systemInstruction, responseMimeType: "application/json", responseSchema: schema } });
         return JSON.parse(response.text.trim());
     } catch (error) {
         console.error("Error generating keywords:", error);
@@ -537,9 +472,10 @@ export const generateAIKeywords = async (plan: PlanData, mode: 'seed' | 'prompt'
 
 export const generateAIImages = async (prompt: string): Promise<GeneratedImage[]> => {
     try {
+        const aiClient = getAiClient();
         const aspectRatios: AspectRatio[] = ['1:1', '16:9', '9:16', '3:4'];
         const imagePromises = aspectRatios.map(aspectRatio =>
-            ai.models.generateImages({ model: 'imagen-3.0-generate-002', prompt, config: { numberOfImages: 1, outputMimeType: 'image/jpeg', aspectRatio } })
+            aiClient.models.generateImages({ model: 'imagen-3.0-generate-002', prompt, config: { numberOfImages: 1, outputMimeType: 'image/jpeg', aspectRatio } })
         );
         const responses = await Promise.all(imagePromises);
         return responses.map((response, index) => ({
