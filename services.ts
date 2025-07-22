@@ -77,15 +77,15 @@ const downloadFile = (filename: string, content: string, mimeType: string) => {
 };
 
 // Helper to convert from DB Row to application PlanData
-const planFromDb = (dbPlan: Database['public']['Tables']['plans']['Row']): PlanData => {
+const planFromDb = (dbPlan: any): PlanData => {
   const { customFormats, utmLinks, months, creatives, adGroups, ...rest } = dbPlan;
   return {
     ...rest,
-    customFormats: (customFormats as any) ?? [],
-    utmLinks: (utmLinks as any) ?? [],
-    months: (months as any) ?? {},
-    creatives: (creatives as any) ?? {},
-    adGroups: (adGroups as any) ?? [],
+    customFormats: customFormats ?? [],
+    utmLinks: utmLinks ?? [],
+    months: months ?? {},
+    creatives: creatives ?? {},
+    adGroups: adGroups ?? [],
   };
 };
 
@@ -118,7 +118,7 @@ export const savePlan = async (plan: PlanData): Promise<PlanData | null> => {
         console.error("Error saving plan:", error);
         return null;
     }
-    return data ? planFromDb(data) : null;
+    return data ? planFromDb(data as any) : null;
 };
 
 export const deletePlan = async (planId: string): Promise<void> => {
@@ -145,7 +145,7 @@ export const getPlanById = async (planId: string): Promise<PlanData | null> => {
         }
         return null;
     }
-    return data ? planFromDb(data) : null;
+    return data ? planFromDb(data as any) : null;
 };
 
 
