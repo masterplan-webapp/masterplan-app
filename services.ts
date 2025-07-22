@@ -1,5 +1,4 @@
 
-
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { createClient } from '@supabase/supabase-js';
 import jsPDF from 'jspdf';
@@ -105,12 +104,12 @@ export const getPlans = async (userId: string): Promise<PlanData[]> => {
 };
 
 export const savePlan = async (plan: PlanData): Promise<PlanData | null> => {
-    // Casting the plan to 'any' is sufficient to prevent the "Type instantiation
-    // is excessively deep" error. It stops TypeScript from trying to validate
-    // the complex nested structure of PlanData against Supabase's generic types.
-    const { data, error } = await supabase
+    // The `as any` cast on the builder chain prevents a "Type instantiation is excessively
+    // deep" error. It stops TypeScript from trying to validate the complex nested
+    // structure of PlanData against Supabase's generic types for the JSON columns.
+    const { data, error } = await (supabase
         .from('plans')
-        .upsert(plan as any)
+        .upsert(plan as any) as any)
         .select()
         .single();
     
@@ -133,10 +132,13 @@ export const deletePlan = async (planId: string): Promise<void> => {
 };
 
 export const getPlanById = async (planId: string): Promise<PlanData | null> => {
-    const { data, error } = await supabase
+    // Casting the query builder to 'any' before .single() prevents a "Type instantiation is
+    // excessively deep" error. This is a workaround for TypeScript struggling
+    // with Supabase's complex generic types for JSON columns.
+    const { data, error } = await (supabase
         .from('plans')
         .select('*')
-        .eq('id', planId)
+        .eq('id', planId) as any)
         .single();
 
     if (error) {
