@@ -623,8 +623,8 @@ export const LoginPage: React.FC = () => {
         <div className="h-screen w-full flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
             <Card className="max-w-md w-full shadow-2xl animate-modalFadeIn">
                 <img src={LOGO_DARK} alt="MasterPlan Logo" className="mx-auto h-12 mb-2" />
-                <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100">{isSignUp ? t('create_account') : t('Acesse sua conta')}</h1>
-                <p className="mt-2 mb-6 text-center text-gray-600 dark:text-gray-400">{t('Ferramenta de IA para Marketing.')}</p>
+                <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100">{isSignUp ? t('create_account') : t('Plano de Mídia com Inteligência')}</h1>
+                <p className="mt-2 mb-6 text-center text-gray-600 dark:text-gray-400">{t('A única ferramenta que o profissional de mídia paga precisa.')}</p>
                 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {isSignUp && (
@@ -1251,9 +1251,9 @@ const CustomPieLegend: React.FC<any> = (props) => {
 };
 
 export const ChartCard: React.FC<ChartCardProps> = ({ title, data, dataKey, nameKey, className, customLegend }) => {
-    const { theme } = useTheme();
-    const labelColor = theme === 'dark' ? '#D1D5DB' : '#4B5563'; // gray-300 or gray-600
-    const lineColor = theme === 'dark' ? '#4B5563' : '#D1D5DB'; // gray-600 or gray-300
+    // Since the theme is always dark, we can hardcode the colors for reliability.
+    const labelColor = '#e5e7eb'; // Tailwind's gray-200, bright and clear on dark backgrounds
+    const lineColor = '#4B5563'; // Tailwind's gray-600
 
     const RADIAN = Math.PI / 180;
     const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
