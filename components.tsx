@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { ChevronDown, PlusCircle, Trash2, Edit, Save, X, Menu, FileDown, Settings, Sparkles, Loader as LoaderIcon, Copy as CopyIcon, Check, Upload, Link2, LayoutDashboard, List, PencilRuler, FileText, Sheet, Sun, Moon, LogOut, Wand2, FilePlus2, ArrowLeft, MoreVertical, User as UserIcon, LucideProps, AlertTriangle, KeyRound, ImageIcon, Download } from 'lucide-react';
@@ -595,6 +596,8 @@ export const AISuggestionsModal: React.FC<AISuggestionsModalProps> = ({ isOpen, 
 export const LoginPage: React.FC = () => {
     const { signInWithGoogle, signInWithEmail, signUpWithEmail, loading } = useAuth();
     const { t } = useLanguage();
+    const { theme } = useTheme();
+    const logoSrc = theme === 'dark' ? LOGO_DARK : LOGO_LIGHT;
     const [isSignUp, setIsSignUp] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -622,7 +625,7 @@ export const LoginPage: React.FC = () => {
     return (
         <div className="h-screen w-full flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
             <Card className="max-w-md w-full shadow-2xl animate-modalFadeIn">
-                <img src={LOGO_DARK} alt="MasterPlan Logo" className="mx-auto h-12 mb-2" />
+                <img src={logoSrc} alt="MasterPlan Logo" className="mx-auto h-12 mb-2" />
                 <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100">{isSignUp ? t('create_account') : t('Acesse sua conta')}</h1>
                 <p className="mt-2 mb-6 text-center text-gray-600 dark:text-gray-400">{t('Ferramenta de IA para Marketing.')}</p>
                 
@@ -924,11 +927,13 @@ export const ShareLinkModal: React.FC<ShareLinkModalProps> = ({ isOpen, onClose,
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onProfileClick }) => {
     const { user } = useAuth();
     const { t } = useLanguage();
+    const { theme } = useTheme();
+    const logoSrc = theme === 'dark' ? LOGO_DARK : LOGO_LIGHT;
 
     return (
         <div className="flex justify-between items-center mb-6">
             <img 
-                src={LOGO_DARK} 
+                src={logoSrc} 
                 alt="MasterPlan Logo" 
                 className="h-12"
             />
