@@ -21,6 +21,7 @@ import {
     ShareLinkModal,
     ShareablePlanViewer,
     LOGO_DARK,
+    LOGO_LIGHT,
     ICON_LOGO
 } from './components';
 
@@ -43,6 +44,8 @@ interface CustomSidebarProps {
 
 const Sidebar: React.FC<CustomSidebarProps> = ({ isCollapsed, isMobileOpen, activePlan, activeView, handleNavigate, handleBackToDashboard, setAddMonthModalOpen, setIsProfileModalOpen, user, signOut }) => {
     const { t } = useLanguage();
+    const { theme } = useTheme();
+    const logoSrc = theme === 'dark' ? LOGO_DARK : LOGO_LIGHT;
     const [isDetailingOpen, setIsDetailingOpen] = useState(true);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -60,7 +63,7 @@ const Sidebar: React.FC<CustomSidebarProps> = ({ isCollapsed, isMobileOpen, acti
         <aside className={`bg-gray-900 text-white flex flex-col shadow-lg transition-transform duration-300 ease-in-out lg:transition-all lg:duration-300 lg:ease-in-out fixed inset-y-0 left-0 z-40 w-64 transform ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}`}>
             <div className={`flex items-center h-16 shrink-0 border-b border-gray-700/50 ${isCollapsed ? 'justify-center' : 'px-4'}`}>
                 <img 
-                    src={isCollapsed ? ICON_LOGO : LOGO_DARK} 
+                    src={isCollapsed ? ICON_LOGO : logoSrc} 
                     alt="MasterPlan Logo" 
                     className={`transition-all duration-300 ${isCollapsed ? 'h-10 w-10 rounded-md' : 'h-8'}`} 
                 />
