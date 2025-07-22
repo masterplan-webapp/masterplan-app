@@ -484,13 +484,14 @@ function AppLogic() {
         localStorage.removeItem('lastActivePlanId');
     };
 
-    const handlePlanCreation = useCallback(async (type: 'ai' | 'blank' | 'template') => {
+    const requestAIPlanCreation = useCallback(() => {
+        setIsAIPlanModalOpen(true);
+    }, []);
+
+    const handleDirectPlanCreation = useCallback(async (type: 'blank' | 'template') => {
         if (!user) return;
         let newPlan: PlanData | null = null;
-        if (type === 'ai') {
-            setIsAIPlanModalOpen(true);
-            return; // Modal will handle the rest
-        } else if (type === 'blank') {
+        if (type === 'blank') {
             newPlan = await createNewEmptyPlan(user.id);
         } else if (type === 'template') {
             newPlan = await createNewPlanFromTemplate(user.id);
@@ -662,20 +663,6 @@ function AppLogic() {
     if (!user) {
         return <LoginPage />;
     }
-
-    if (!activePlan) {
-        if (allPlans.length === 0) {
-            return <OnboardingPage onPlanCreated={handlePlanCreation} />;
-        }
-        return <PlanSelectorPageComponent 
-                    plans={allPlans} 
-                    onSelectPlan={selectActivePlan} 
-                    onPlanCreated={handlePlanCreation} 
-                    user={user} 
-                    onProfileClick={() => setIsProfileModalOpen(true)}
-                    onDeletePlan={handleDeletePlan}
-                />;
-    }
     
     const AppView = ({ activeView, activePlan, ...rest } : { activeView: string, activePlan: PlanData, onPlanUpdate: (plan: PlanData) => Promise<void> } & any) => {
         if (activeView === 'Overview') {
@@ -709,40 +696,67 @@ function AppLogic() {
         return <DashboardPage planData={activePlan} onNavigate={handleNavigate} onAddMonthClick={() => setAddMonthModalOpen(true)} onRegeneratePlan={handleRegenerateAIPlan} isRegenerating={isRegeneratingPlan} />;
     };
 
+    let pageContent;
+    if (!activePlan) {
+        if (allPlans.length === 0) {
+            pageContent = <OnboardingPage 
+                onRequestAI={requestAIPlanCreation}
+                onSelectBlank={() => handleDirectPlanCreation('blank')}
+                onSelectTemplate={() => handleDirectPlanCreation('template')}
+            />;
+        } else {
+            pageContent = <PlanSelectorPageComponent 
+                    plans={allPlans} 
+                    onSelectPlan={selectActivePlan} 
+                    onRequestAI={requestAIPlanCreation}
+                    onSelectBlank={() => handleDirectPlanCreation('blank')}
+                    onSelectTemplate={() => handleDirectPlanCreation('template')}
+                    user={user} 
+                    onProfileClick={() => setIsProfileModalOpen(true)}
+                    onDeletePlan={handleDeletePlan}
+                />;
+        }
+    } else {
+        pageContent = (
+            <div className="flex h-screen bg-gray-100 dark:bg-gray-900/90 overflow-hidden">
+                {isMobileSidebarOpen && <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setIsMobileSidebarOpen(false)}></div>}
+                
+                <Sidebar 
+                    isCollapsed={isSidebarCollapsed} 
+                    isMobileOpen={isMobileSidebarOpen}
+                    activePlan={activePlan} 
+                    activeView={activeView} 
+                    handleNavigate={handleNavigate} 
+                    handleBackToDashboard={handleBackToDashboard}
+                    setAddMonthModalOpen={setAddMonthModalOpen}
+                    setIsProfileModalOpen={setIsProfileModalOpen}
+                    user={user}
+                    signOut={signOut}
+                />
+                
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <Header 
+                        activeView={activeView} 
+                        toggleSidebar={toggleSidebar}
+                        setPlanModalOpen={() => setPlanDetailsModalOpen(true)}
+                        activePlan={activePlan}
+                        isExporting={isExporting}
+                        onExportPDF={handleExportPDF}
+                        onGetShareLink={handleGetShareLink}
+                    />
+                    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900/90 p-4 sm:p-6 lg:p-8">
+                        <AppView activeView={activeView} activePlan={activePlan} onPlanUpdate={handlePlanUpdate} />
+                    </main>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="flex h-screen bg-gray-100 dark:bg-gray-900/90 overflow-hidden">
-            {isMobileSidebarOpen && <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setIsMobileSidebarOpen(false)}></div>}
-            
-            <Sidebar 
-                isCollapsed={isSidebarCollapsed} 
-                isMobileOpen={isMobileSidebarOpen}
-                activePlan={activePlan} 
-                activeView={activeView} 
-                handleNavigate={handleNavigate} 
-                handleBackToDashboard={handleBackToDashboard}
-                setAddMonthModalOpen={setAddMonthModalOpen}
-                setIsProfileModalOpen={setIsProfileModalOpen}
-                user={user}
-                signOut={signOut}
-            />
-            
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <Header 
-                    activeView={activeView} 
-                    toggleSidebar={toggleSidebar}
-                    setPlanModalOpen={() => setPlanDetailsModalOpen(true)}
-                    activePlan={activePlan}
-                    isExporting={isExporting}
-                    onExportPDF={handleExportPDF}
-                    onGetShareLink={handleGetShareLink}
-                />
-                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900/90 p-4 sm:p-6 lg:p-8">
-                    <AppView activeView={activeView} activePlan={activePlan} onPlanUpdate={handlePlanUpdate} />
-                </main>
-            </div>
+        <>
+            {pageContent}
 
-            {isPlanDetailsModalOpen && (
+            {isPlanDetailsModalOpen && activePlan && (
                 <PlanDetailsModal 
                     isOpen={isPlanDetailsModalOpen}
                     onClose={() => setPlanDetailsModalOpen(false)}
@@ -753,12 +767,14 @@ function AppLogic() {
                 />
             )}
             
-            <AddMonthModal 
-                isOpen={isAddMonthModalOpen}
-                onClose={() => setAddMonthModalOpen(false)}
-                onAddMonth={handleAddMonth}
-                existingMonths={Object.keys(activePlan.months || {})}
-            />
+            {activePlan && (
+                <AddMonthModal 
+                    isOpen={isAddMonthModalOpen}
+                    onClose={() => setAddMonthModalOpen(false)}
+                    onAddMonth={handleAddMonth}
+                    existingMonths={Object.keys(activePlan.months || {})}
+                />
+            )}
 
             <UserProfileModalInternal
                 isOpen={isProfileModalOpen}
@@ -783,7 +799,7 @@ function AppLogic() {
                 onClose={() => setShareModalOpen(false)}
                 link={shareLink}
             />
-        </div>
+        </>
     );
 }
 
