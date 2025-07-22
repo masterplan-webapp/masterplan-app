@@ -1238,7 +1238,7 @@ const CustomPieLegend: React.FC<any> = (props) => {
   const { payload } = props;
   const { t } = useLanguage();
   return (
-    <ul className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4 text-xs text-gray-300">
+    <ul className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4 text-xs text-gray-600 dark:text-gray-300">
       {payload.map((entry: any, index: number) => (
         <li key={`item-${index}`} className="flex items-center gap-2">
            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
@@ -1251,9 +1251,14 @@ const CustomPieLegend: React.FC<any> = (props) => {
 };
 
 export const ChartCard: React.FC<ChartCardProps> = ({ title, data, dataKey, nameKey, className, customLegend }) => {
-    // Since the theme is always dark, we can hardcode the colors for reliability.
-    const labelColor = '#e5e7eb'; // Tailwind's gray-200, bright and clear on dark backgrounds
-    const lineColor = '#4B5563'; // Tailwind's gray-600
+    const { theme } = useTheme();
+
+    // Dynamically set colors based on the current theme
+    const labelColor = theme === 'dark' ? '#e5e7eb' : '#374151'; // gray-200 for dark, gray-700 for light
+    const lineColor = theme === 'dark' ? '#4B5563' : '#D1D5DB';  // gray-600 for dark, gray-300 for light
+    const tooltipBg = theme === 'dark' ? 'rgba(31, 41, 55, 0.9)' : 'rgba(255, 255, 255, 0.95)';
+    const tooltipBorder = theme === 'dark' ? '#4b5563' : '#e5e7eb';
+    const tooltipColor = theme === 'dark' ? '#ffffff' : '#1f2937';
 
     const RADIAN = Math.PI / 180;
     const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
@@ -1296,13 +1301,13 @@ export const ChartCard: React.FC<ChartCardProps> = ({ title, data, dataKey, name
                         <Tooltip
                           formatter={(value, name) => [formatCurrency(value as number), name]}
                           contentStyle={{
-                            backgroundColor: 'rgba(31, 41, 55, 0.9)', // gray-800 with opacity
-                            border: '1px solid #4b5563', // gray-600
+                            backgroundColor: tooltipBg,
+                            border: `1px solid ${tooltipBorder}`,
                             borderRadius: '0.5rem',
-                            color: '#ffffff'
                           }}
-                          itemStyle={{ color: '#ffffff' }}
-                          cursor={{ fill: 'rgba(75, 85, 99, 0.2)' }} // gray-500 with opacity
+                          itemStyle={{ color: tooltipColor }}
+                          labelStyle={{ color: tooltipColor, fontWeight: 'bold' }}
+                          cursor={{ fill: 'rgba(75, 85, 99, 0.2)' }}
                         />
                         <Legend content={customLegend || <CustomPieLegend />} />
                     </PieChart>
