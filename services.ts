@@ -105,10 +105,10 @@ export const getPlans = async (userId: string): Promise<PlanData[]> => {
 };
 
 export const savePlan = async (plan: PlanData): Promise<PlanData | null> => {
-    // Creating a new plain object from the plan data and casting to 'any'
-    // helps avoid a "Type instantiation excessively deep" error from TypeScript
-    // when dealing with Supabase's complex generic types.
-    const planToSave = {
+    // By typing planToSave as 'any', we prevent TypeScript from inferring its
+    // complex structure, which can cause "Type instantiation excessively deep"
+    // errors with Supabase's generic methods like 'upsert'.
+    const planToSave: any = {
         id: plan.id,
         created_at: plan.created_at,
         user_id: plan.user_id,
@@ -129,7 +129,7 @@ export const savePlan = async (plan: PlanData): Promise<PlanData | null> => {
 
     const { data, error } = await supabase
         .from('plans')
-        .upsert(planToSave as any) 
+        .upsert(planToSave)
         .select()
         .single();
     
