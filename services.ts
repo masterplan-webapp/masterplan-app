@@ -78,23 +78,14 @@ const downloadFile = (filename: string, content: string, mimeType: string) => {
 
 // Helper to convert from DB Row to application PlanData
 const planFromDb = (dbPlan: Database['public']['Tables']['plans']['Row']): PlanData => {
+  const { customFormats, utmLinks, months, creatives, adGroups, ...rest } = dbPlan;
   return {
-    id: dbPlan.id,
-    created_at: dbPlan.created_at,
-    user_id: dbPlan.user_id,
-    campaignName: dbPlan.campaignName,
-    objective: dbPlan.objective,
-    targetAudience: dbPlan.targetAudience,
-    location: dbPlan.location,
-    totalInvestment: dbPlan.totalInvestment,
-    logoUrl: dbPlan.logoUrl,
-    aiPrompt: dbPlan.aiPrompt,
-    aiImagePrompt: dbPlan.aiImagePrompt,
-    customFormats: (dbPlan.customFormats as unknown as string[]) ?? [],
-    utmLinks: (dbPlan.utmLinks as unknown as UTMLink[]) ?? [],
-    months: (dbPlan.months as unknown as Record<string, Campaign[]>) ?? {},
-    creatives: (dbPlan.creatives as unknown as Record<string, CreativeTextData[]>) ?? {},
-    adGroups: (dbPlan.adGroups as unknown as AdGroup[]) ?? [],
+    ...rest,
+    customFormats: (customFormats as any) ?? [],
+    utmLinks: (utmLinks as any) ?? [],
+    months: (months as any) ?? {},
+    creatives: (creatives as any) ?? {},
+    adGroups: (adGroups as any) ?? [],
   };
 };
 
@@ -114,9 +105,31 @@ export const getPlans = async (userId: string): Promise<PlanData[]> => {
 };
 
 export const savePlan = async (plan: PlanData): Promise<PlanData | null> => {
+    // Creating a new plain object from the plan data and casting to 'any'
+    // helps avoid a "Type instantiation excessively deep" error from TypeScript
+    // when dealing with Supabase's complex generic types.
+    const planToSave = {
+        id: plan.id,
+        created_at: plan.created_at,
+        user_id: plan.user_id,
+        campaignName: plan.campaignName,
+        objective: plan.objective,
+        targetAudience: plan.targetAudience,
+        location: plan.location,
+        totalInvestment: plan.totalInvestment,
+        logoUrl: plan.logoUrl,
+        customFormats: plan.customFormats,
+        utmLinks: plan.utmLinks,
+        months: plan.months,
+        creatives: plan.creatives,
+        adGroups: plan.adGroups,
+        aiPrompt: plan.aiPrompt,
+        aiImagePrompt: plan.aiImagePrompt,
+    };
+
     const { data, error } = await supabase
         .from('plans')
-        .upsert(plan as any)
+        .upsert(planToSave as any) 
         .select()
         .single();
     
