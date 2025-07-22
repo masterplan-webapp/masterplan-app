@@ -1,5 +1,105 @@
-
 import { GoogleGenAI } from '@google/genai';
+
+// --- Database Schema Definition ---
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export interface Database {
+  public: {
+    Tables: {
+      plans: {
+        Row: {
+            id: string;
+            created_at?: string;
+            user_id?: string;
+            campaignName: string;
+            objective: string;
+            targetAudience: string;
+            location: string;
+            totalInvestment: number;
+            logoUrl: string;
+            customFormats: Json;
+            utmLinks: Json;
+            months: Json;
+            creatives: Json;
+            adGroups: Json;
+            aiPrompt?: string | null;
+            aiImagePrompt?: string | null;
+        },
+        Insert: {
+            id: string;
+            created_at?: string;
+            user_id?: string;
+            campaignName: string;
+            objective: string;
+            targetAudience: string;
+            location: string;
+            totalInvestment: number;
+            logoUrl: string;
+            customFormats: Json;
+            utmLinks: Json;
+            months: Json;
+            creatives: Json;
+            adGroups: Json;
+            aiPrompt?: string | null;
+            aiImagePrompt?: string | null;
+        },
+        Update: {
+            id?: string;
+            created_at?: string;
+            user_id?: string;
+            campaignName?: string;
+            objective?: string;
+            targetAudience?: string;
+            location?: string;
+            totalInvestment?: number;
+            logoUrl?: string;
+            customFormats?: Json;
+            utmLinks?: Json;
+            months?: Json;
+            creatives?: Json;
+            adGroups?: Json;
+            aiPrompt?: string | null;
+            aiImagePrompt?: string | null;
+        }
+      },
+      profiles: {
+         Row: {
+            id: string,
+            display_name: string | null,
+            photo_url: string | null
+        },
+        Insert: {
+            id: string,
+            display_name?: string | null,
+            photo_url?: string | null
+        },
+        Update: {
+            display_name?: string | null,
+            photo_url?: string | null
+        }
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
 
 // DATA MODELS
 export interface Campaign {
@@ -59,9 +159,12 @@ export interface AdGroup {
     keywords: KeywordSuggestion[];
 }
 
+type PlanRow = Database['public']['Tables']['plans']['Row'];
+
 export interface PlanData {
-    id:string;
-    user_id?: string; // Foreign key to auth.users
+    id: string;
+    created_at?: string;
+    user_id?: string;
     campaignName: string;
     objective: string;
     targetAudience: string;
@@ -73,8 +176,8 @@ export interface PlanData {
     months: Record<string, Campaign[]>;
     creatives: Record<string, CreativeTextData[]>;
     adGroups: AdGroup[];
-    aiPrompt?: string;
-    aiImagePrompt?: string;
+    aiPrompt?: string | null;
+    aiImagePrompt?: string | null;
 }
 
 export interface UTMLink {
@@ -301,22 +404,28 @@ export interface CreativeBuilderPageProps {
 }
 
 export interface OnboardingPageProps {
-    onPlanCreated: (type: 'ai' | 'blank' | 'template') => void;
+    onRequestAI: () => void;
+    onSelectBlank: () => void;
+    onSelectTemplate: () => void;
 }
 
 export interface PlanSelectorPageProps {
     plans: PlanData[];
     onSelectPlan: (plan: PlanData) => void;
-    onPlanCreated: (newPlanOrType: PlanData | 'ai' | 'blank' | 'template') => void;
+    onRequestAI: () => void;
+    onSelectBlank: () => void;
+    onSelectTemplate: () => void;
     user: User;
     onProfileClick: () => void;
-    onDeletePlan: (planId: string) => Promise<void>; // now async
+    onDeletePlan: (planId: string) => Promise<void>;
 }
 
 export interface PlanCreationChoiceModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onPlanCreated: (type: 'ai' | 'blank' | 'template') => void;
+    onRequestAI: () => void;
+    onSelectBlank: () => void;
+    onSelectTemplate: () => void;
 }
 
 // CHART PROPS
