@@ -104,12 +104,14 @@ export const getPlans = async (userId: string): Promise<PlanData[]> => {
 };
 
 export const savePlan = async (plan: PlanData): Promise<PlanData | null> => {
-    // The `as any` cast on the builder chain prevents a "Type instantiation is excessively
-    // deep" error. It stops TypeScript from trying to validate the complex nested
-    // structure of PlanData against Supabase's generic types for the JSON columns.
-    const { data, error } = await (supabase
+    // To prevent a "Type instantiation is excessively deep" error from TypeScript
+    // when dealing with complex nested JSON types, we first create the query builder
+    // and then cast it to `any` before executing the final part of the query.
+    const query = supabase
         .from('plans')
-        .upsert(plan as any) as any)
+        .upsert(plan as any);
+    
+    const { data, error } = await (query as any)
         .select()
         .single();
     
@@ -132,14 +134,14 @@ export const deletePlan = async (planId: string): Promise<void> => {
 };
 
 export const getPlanById = async (planId: string): Promise<PlanData | null> => {
-    // Casting the query builder to 'any' before .single() prevents a "Type instantiation is
-    // excessively deep" error. This is a workaround for TypeScript struggling
-    // with Supabase's complex generic types for JSON columns.
-    const { data, error } = await (supabase
+    // To work around a "Type instantiation is excessively deep" TypeScript error
+    // with complex JSON columns, we cast the query builder to 'any' before calling .single().
+    const query = supabase
         .from('plans')
         .select('*')
-        .eq('id', planId) as any)
-        .single();
+        .eq('id', planId);
+
+    const { data, error } = await (query as any).single();
 
     if (error) {
         if (error.code !== 'PGRST116') {
