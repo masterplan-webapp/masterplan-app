@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { ChevronDown, PlusCircle, Trash2, Edit, Save, X, Menu, FileDown, Settings, Sparkles, Loader as LoaderIcon, Copy, Check, Upload, Link2, LayoutDashboard, List, PencilRuler, FileText, Sheet, Sun, Moon, LogOut, Wand2, FilePlus2, ArrowLeft, MoreVertical, User as UserIcon, KeyRound, ImageIcon } from 'lucide-react';
 
@@ -664,21 +665,21 @@ function AppLogic() {
         return <LoginPage />;
     }
     
-    const AppView = ({ activeView, activePlan, ...rest } : { activeView: string, activePlan: PlanData, onPlanUpdate: (plan: PlanData) => Promise<void> } & any) => {
+    const AppView = ({ activeView, activePlan, onPlanUpdate }: { activeView: string; activePlan: PlanData; onPlanUpdate: (plan: PlanData) => Promise<void> }) => {
         if (activeView === 'Overview') {
             return <DashboardPage planData={activePlan} onNavigate={handleNavigate} onAddMonthClick={() => setAddMonthModalOpen(true)} onRegeneratePlan={handleRegenerateAIPlan} isRegenerating={isRegeneratingPlan} />;
         }
         if (activeView === 'Copy_builder') {
-            return <CopyBuilderPage planData={activePlan} onPlanUpdate={rest.onPlanUpdate} />;
+            return <CopyBuilderPage planData={activePlan} onPlanUpdate={onPlanUpdate} />;
         }
         if (activeView === 'UTM_Builder') {
-            return <UTMBuilderPage planData={activePlan} onPlanUpdate={rest.onPlanUpdate} />;
+            return <UTMBuilderPage planData={activePlan} onPlanUpdate={onPlanUpdate} />;
         }
         if (activeView === 'Keyword_Builder') {
-            return <KeywordBuilderPage planData={activePlan} onPlanUpdate={rest.onPlanUpdate} />;
+            return <KeywordBuilderPage planData={activePlan} onPlanUpdate={onPlanUpdate} />;
         }
         if (activeView === 'Creative_Builder') {
-             return <CreativeBuilderPage planData={activePlan} onPlanUpdate={rest.onPlanUpdate} />;
+             return <CreativeBuilderPage planData={activePlan} onPlanUpdate={onPlanUpdate} />;
         }
         if (activePlan.months && activePlan.months[activeView]) {
             return <MonthlyPlanPage 

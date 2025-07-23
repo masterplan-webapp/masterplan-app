@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { createClient } from '@supabase/supabase-js';
 import jsPDF from 'jspdf';
@@ -28,8 +29,14 @@ let ai: GoogleGenAI | null = null;
 const getAiClient = (): GoogleGenAI => {
     if (!ai) {
         // This will only be called when an AI function is used for the first time.
-        // It assumes process.env.API_KEY is available at that point.
-        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        // It assumes import.meta.env.VITE_API_KEY is available at that point.
+        const apiKey = import.meta.env.VITE_API_KEY;
+        if (!apiKey) {
+            console.error("VITE_API_KEY is not set in the environment variables.");
+            alert("The AI service is not configured. Please contact the administrator.");
+            throw new Error("VITE_API_KEY is not configured.");
+        }
+        ai = new GoogleGenAI({ apiKey });
     }
     return ai;
 };
@@ -104,17 +111,15 @@ export const getPlans = async (userId: string): Promise<PlanData[]> => {
 };
 
 export const savePlan = async (plan: PlanData): Promise<PlanData | null> => {
-    // To prevent a "Type instantiation is excessively deep" error from TypeScript
-    // when dealing with complex nested JSON types, we first create the query builder
-    // and then cast it to `any` before executing the final part of the query.
-    const query = supabase
+    // To prevent a "Type instantiation is excessively deep" error, we cast the query
+    // builder to `any`. This stops TypeScript from deeply analyzing the complex
+    // nested JSON types in the `PlanData` object and the corresponding table row.
+    const { data, error } = await (supabase
         .from('plans')
-        .upsert(plan as any);
-    
-    const { data, error } = await (query as any)
+        .upsert(plan as any) as any)
         .select()
         .single();
-    
+
     if (error) {
         console.error("Error saving plan:", error);
         return null;
@@ -134,14 +139,14 @@ export const deletePlan = async (planId: string): Promise<void> => {
 };
 
 export const getPlanById = async (planId: string): Promise<PlanData | null> => {
-    // To work around a "Type instantiation is excessively deep" TypeScript error
-    // with complex JSON columns, we cast the query builder to 'any' before calling .single().
-    const query = supabase
+    // To prevent a "Type instantiation is excessively deep" error, we cast the query
+    // builder to `any` before calling `.single()`. This stops TypeScript from deeply
+    // analyzing the complex type of the row being selected.
+    const { data, error } = await (supabase
         .from('plans')
         .select('*')
-        .eq('id', planId);
-
-    const { data, error } = await (query as any).single();
+        .eq('id', planId) as any)
+        .single();
 
     if (error) {
         if (error.code !== 'PGRST116') {
