@@ -74,23 +74,33 @@ export const AIResponseModal: React.FC<AIResponseModalProps> = ({ isOpen, onClos
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl animate-modalFadeIn">
-                <div className="p-5 border-b dark:border-gray-700 flex justify-between items-center">
-                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2"><Sparkles className="text-blue-500"/> {title}</h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"><X size={24} /></button>
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl flex flex-col animate-modalFadeIn overflow-hidden border border-gray-200 dark:border-gray-700 max-h-[90vh]">
+                <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-3">
+                        <span className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-full">
+                            <Sparkles className="text-blue-500" size={20}/>
+                        </span>
+                        {title}
+                    </h2>
+                    <button onClick={onClose} className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition-colors">
+                        <X size={24} />
+                    </button>
                 </div>
-                <div className="p-6 max-h-[60vh] overflow-y-auto">
+                <div className="p-6 overflow-y-auto">
                     {isLoading ? (
-                        <div className="flex justify-center items-center h-48">
+                        <div className="flex justify-center items-center h-48 flex-col text-center">
                             <LoaderIcon className="animate-spin text-blue-500" size={40}/>
+                            <p className="mt-4 text-gray-500 dark:text-gray-400">{t('Gerando...')}</p>
                         </div>
                     ) : (
                         <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: marked.parse(content) as string }}/>
                     )}
                 </div>
-                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border-t dark:border-gray-700 flex justify-end">
-                    <button onClick={onClose} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">{t('close')}</button>
+                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 flex justify-end flex-shrink-0">
+                    <button onClick={onClose} className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800">
+                        {t('close')}
+                    </button>
                 </div>
             </div>
         </div>
